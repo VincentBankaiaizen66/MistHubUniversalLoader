@@ -7,7 +7,7 @@ local SupportedGames = {
     ["Hunted"] = {
         ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/4d27b8d683225d2e858320edf5ef5ea4/raw/MistHubhuntedpc.lua",
         Description = "Load Mist Hub for Hunted (PC version).",
-        PlaceId = 136431686349723  -- Replace with the actual PlaceId for Hunted to enable auto-detection/highlighting.
+        PlaceId = 1234567890  -- Replace with the actual PlaceId for Hunted to enable auto-detection/highlighting.
     }
     -- Template for adding a new game (copy-paste this block and edit values):
     --[[
@@ -22,9 +22,11 @@ local SupportedGames = {
 
 -- Placeholder function for key validation (replace with your actual logic)
 local function ValidateKey(inputKey)
-    -- Example dummy validation: Accepts "VALID_KEY" for testing. Replace with real checks (e.g., API call, hash, or expiration).
-    -- In a real setup, check against a server or use your 12-hour expiration system.
-    if inputKey == "VALID_KEY" then  -- TODO: Replace with secure validation
+    -- Example dummy validation: Accepts "VALID_KEY" for testing.
+    -- REPLACE THIS with real validation logic for keys obtained via Linkvertise.
+    -- This could involve an HTTP request to a server to check if the key exists and hasn't expired (e.g., 12-hour limit).
+    -- Example: Contact a backend API or database to verify inputKey.
+    if inputKey == "VALID_KEY" then  -- TODO: Implement secure Linkvertise key validation here
         return true, "Key validated successfully!"
     else
         return false, "Invalid key. Please try again or get a new one from Linkvertise."
@@ -42,7 +44,7 @@ MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-MainFrame.Size = UDim2.new(0, 300, 0, 200)
+MainFrame.Size = UDim2.new(0, 300, 0, 220)
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = MainFrame
@@ -58,12 +60,31 @@ local InfoLabel = Instance.new("TextLabel")
 InfoLabel.Parent = MainFrame
 InfoLabel.BackgroundTransparency = 1
 InfoLabel.Position = UDim2.new(0, 0, 0, 30)
-InfoLabel.Size = UDim2.new(1, 0, 0, 80)
+InfoLabel.Size = UDim2.new(1, 0, 0, 60)
 InfoLabel.Font = Enum.Font.SourceSans
-InfoLabel.Text = "Enter your key (from Linkvertise). Keys expire after 12 hours.\nGet key: [Your Linkvertise Link Here]\nDiscord: [Your Discord Invite Here]"
+InfoLabel.Text = "Enter your key below. Keys expire after 12 hours.\nVisit Linkvertise to get your key!"
 InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 InfoLabel.TextSize = 14
 InfoLabel.TextWrapped = true
+
+local LinkvertiseButton = Instance.new("TextButton")
+LinkvertiseButton.Parent = MainFrame
+LinkvertiseButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+LinkvertiseButton.BorderSizePixel = 0
+LinkvertiseButton.Position = UDim2.new(0.1, 0, 0.45, 0)
+LinkvertiseButton.Size = UDim2.new(0.8, 0, 0, 25)
+LinkvertiseButton.Font = Enum.Font.SourceSansBold
+LinkvertiseButton.Text = "Get Key from Linkvertise"
+LinkvertiseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LinkvertiseButton.TextSize = 14
+
+-- Note: Roblox does not allow direct URL opening from GUI. Users must manually copy or visit the link.
+LinkvertiseButton.MouseButton1Click:Connect(function()
+    -- Display the Linkvertise link as text since direct opening isn't possible in Roblox.
+    -- Optionally, you could use game.Chat to output the link if your executor allows.
+    InfoLabel.Text = "Visit: [Your Linkvertise Link Here]\nCopy this link and open it in your browser to get a key! Keys expire after 12 hours."
+    -- Replace [Your Linkvertise Link Here] with the actual URL you set up on Linkvertise.
+end)
 
 local KeyInput = Instance.new("TextBox")
 KeyInput.Parent = MainFrame
@@ -81,7 +102,7 @@ local SubmitButton = Instance.new("TextButton")
 SubmitButton.Parent = MainFrame
 SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 SubmitButton.BorderSizePixel = 0
-SubmitButton.Position = UDim2.new(0.3, 0, 0.8, 0)
+SubmitButton.Position = UDim2.new(0.3, 0, 0.75, 0)
 SubmitButton.Size = UDim2.new(0.4, 0, 0, 30)
 SubmitButton.Font = Enum.Font.SourceSansBold
 SubmitButton.Text = "Submit"
@@ -91,8 +112,8 @@ SubmitButton.TextSize = 16
 local ErrorLabel = Instance.new("TextLabel")
 ErrorLabel.Parent = MainFrame
 ErrorLabel.BackgroundTransparency = 1
-ErrorLabel.Position = UDim2.new(0, 0, 0.9, 0)
-ErrorLabel.Size = UDim2.new(1, 0, 0, 20)
+ErrorLabel.Position = UDim2.new(0, 0, 0.85, 0)
+ErrorLabel.Size = UDim2.new(1, 0, 0, 30)
 ErrorLabel.Font = Enum.Font.SourceSans
 ErrorLabel.Text = ""
 ErrorLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
