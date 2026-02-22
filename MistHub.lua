@@ -2,14 +2,22 @@
 -- Created for Roblox scripting. Loads scripts from permanent URLs after key validation.
 -- Key system inspired by Mist Hub: Uses Linkvertise for keys with 12-hour expiration.
 
+-- Table of supported games. Add new games here following the template below.
 local SupportedGames = {
     ["Hunted"] = {
         ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/4d27b8d683225d2e858320edf5ef5ea4/raw/MistHubhuntedpc.lua",
         Description = "Load Mist Hub for Hunted (PC version).",
-        PlaceId = 1234567890  -- Replace with the actual PlaceId for Hunted to enable auto-detection/highlighting.
+        PlaceId = 136431686349723  -- Replace with the actual PlaceId for Hunted to enable auto-detection/highlighting.
     }
-    -- Add more games here, e.g.:
-    -- ["AnotherGame"] = { ScriptURL = "https://example.com/AnotherScript.lua", Description = "Description here.", PlaceId = 987654321 }
+    -- Template for adding a new game (copy-paste this block and edit values):
+    --[[
+    ["NewGameName"] = {
+        ScriptURL = "https://example.com/YourNewScript.lua",  -- Replace with raw URL of the script
+        Description = "Description for the new game.",        -- Replace with a short description
+        PlaceId = 0000000000                                 -- Replace with actual Roblox PlaceId for auto-detection
+    }
+    --]]
+    -- Add more games by copying the template above and pasting here with updated details.
 }
 
 -- Placeholder function for key validation (replace with your actual logic)
