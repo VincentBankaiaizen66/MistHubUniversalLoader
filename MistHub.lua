@@ -1,142 +1,74 @@
--- Mist Hub Loader (Multi-Game Hub with Key System)
--- Supports PC and Mobile versions of Hunted with selection prompt
--- Single Key System in Loader; Game Scripts Bypass Their Own After Validation
+-- misthub.lua (Universal Loader for PC with Fluent UI)
+-- PC-only hub loader for multiple games
 
--- Safety and Error Handling Wrapper
-local function safeLoad(func)
-    local success, result = pcall(func)
-    if not success then
-        warn("Mist Hub Error: " .. tostring(result) .. ". Falling back to basic mode.")
-        return nil
-    end
-    return result
-end
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local UserInputService = game:GetService("UserInputService")
 
--- Load Fluent UI Library for Loader (with fallback)
-local Fluent = safeLoad(function()
-    return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-end)
+-- Fluent UI Window Setup
+local Window = Fluent:CreateWindow({
+    Title = "MistHub - Universal Loader (PC)",
+    SubTitle = "by VincentBankaiaizen66",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
-local Window
-if Fluent then
-    local Options = Fluent.Options
-    Window = Fluent:CreateWindow({
-        Title = "Mist Hub Loader",
-        SubTitle = "Multi-Game Hub",
-        TabWidth = 160,
-        Size = UDim2.fromOffset(580, 460),
-        Acrylic = true,  -- Enable animations on PC
-        Theme = "Dark",
-        MinimizeKey = Enum.KeyCode.RightControl
-    })
-    print("Mist Hub: Fluent UI loaded successfully.")
-else
-    warn("Mist Hub: Fluent UI failed to load. Using console feedback only.")
-end
+-- Main Tab for Game Selection
+local MainTab = Window:AddTab({ Title = "Game Loader", Icon = "rbxassetid://4483345998" })
+MainTab:AddParagraph({
+    Title = "Welcome to MistHub",
+    Content = "Select a game to load its specific hub. This loader is for PC only."
+})
 
--- Key System Variables
-local KeyValidated = false
-local ValidatedKey = nil
-local PersonalPermanentKeys = {["MY_PERSONAL_KEY_123"] = true}  -- Replace with your keys
-
-local function ValidateKey(inputKey)  -- Placeholder validation logic
-    if PersonalPermanentKeys[inputKey] or inputKey == "VALID_KEY" then
-        KeyValidated = true
-        ValidatedKey = inputKey
-        _G.MistHubKeyValidated = true  -- Set global flag for game scripts to check
-        return true, "Key validated! Access granted."
-    end
-    return false, "Invalid key. Get a new key from Linkvertise."
-end
-
--- Key System GUI
-local function SetupKeySystem()
-    if not Fluent then
-        print("Key system unavailable. Access granted for testing.")
-        KeyValidated = true
-        _G.MistHubKeyValidated = true  -- Set flag even in fallback
-        SetupGameSelection()
-        return
-    end
-
-    local KeyTab = Window:AddTab({ Title = "Key System", Icon = "key" })
-    local KeySect = KeyTab:AddSection({ Title = "Access Validation" })
-    KeySect:AddParagraph({ Title = "Enter Key", Content = "Input your key to unlock Mist Hub." })
-    
-    KeySect:AddButton({
-        Title = "Get Key from Linkvertise",
-        Description = "Click to copy link for temporary key",
-        Callback = function()
-            local link = "https://link-target.net/3097614/ZAIAZeMRBPSb"
-            if setclipboard then setclipboard(link) end
-            Fluent:Notify({ Title = "Link Copied", Content = "Paste in browser: " .. link })
-        end
-    })
-    
-    KeySect:AddInput("KeyInput", {
-        Title = "Enter Key",
-        Callback = function(txt)
-            local valid, message = ValidateKey(txt)
-            Fluent:Notify({ Title = "Validation", Content = message })
-            if valid then
-                KeyTab:Destroy()
-                SetupGameSelection()
-            end
-        end
-    })
-end
-
--- Supported Games Table (Updated with PC and Mobile for Hunted)
-local SupportedGames = {
-    ["Hunted (PC)"] = {
-        ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/4d27b8d683225d2e858320edf5ef5ea4/raw/MistHubhuntedpc.lua",  -- PC script URL (with Fluent + animations)
-        Description = "Load Mist Hub for Hunted (PC version with animations).",
-        PlaceId = 13643168649723  -- PlaceId for HUNTED
-    },
-    ["Hunted (Mobile)"] = {
-        ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/5a1cb8dc8d88c43d7dc3457aa6594ba4/raw/2c94c276a205ebc5d9a80c9f96155cb01346937c/HuntedMobile.lua",  -- Mobile script URL (with Kavo, no animations)
-        Description = "Load Mist Hub for Hunted (Mobile version without animations).",
-        PlaceId = 13643168649723  -- Same PlaceId for HUNTED
-    }
+-- Game Detection and Loader Logic
+local Games = {
+    { Name = "Hunted", PlaceId = 136431686349723, ScriptUrl = "https://raw.githubusercontent.com/VincentBankaiaizen66/YourHuntedPCRepo/main/HuntedPC.lua" },
+    -- Add other games here as needed
+    { Name = "Example Game", PlaceId = 123456789, ScriptUrl = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/ExampleScript.lua" }
 }
 
--- Game Selection GUI
-local function SetupGameSelection()
-    if not Fluent then
-        print("Game selection unavailable. Load a script manually.")
-        return
+local function LoadGameScript()
+    local PlaceId = game.PlaceId
+    for _, gameData in ipairs(Games) do
+        if PlaceId == gameData.PlaceId then
+            Fluent:Notify({
+                Title = "Loading Hub",
+                Content = "Loading script for " .. gameData.Name .. "...",
+                Duration = 3
+            })
+            loadstring(game:HttpGet(gameData.ScriptUrl))()
+            return
+        end
     end
-
-    local GameTab = Window:AddTab({ Title = "Game Selection", Icon = "gamepad" })
-    local GameSect = GameTab:AddSection({ Title = "Supported Games" })
-    GameSect:AddParagraph({ Title = "Select Game", Content = "Choose a game to load Mist Hub. PC versions have animations; Mobile do not." })
-
-    local currentPlaceId = game.PlaceId
-    for gameName, data in pairs(SupportedGames) do
-        local isCurrentGame = (data.PlaceId == currentPlaceId)
-        GameSect:AddButton({
-            Title = gameName .. (isCurrentGame and " (Current Game)" or ""),
-            Description = data.Description,
-            Callback = function()
-                Fluent:Notify({ Title = "Loading", Content = "Loading " .. gameName .. "..." })
-                local success, err = pcall(function()
-                    loadstring(game:HttpGet(data.ScriptURL))()
-                end)
-                if not success then
-                    warn("Mist Hub Load Error: " .. tostring(err) .. ". Check URL or syntax.")
-                else
-                    print("Mist Hub: " .. gameName .. " loaded successfully.")
-                end
-            end
-        })
-    end
+    Fluent:Notify({
+        Title = "Unsupported Game",
+        Content = "No script found for this game (Place ID: " .. tostring(PlaceId) .. ").",
+        Duration = 5
+    })
 end
 
--- Script Entry Point
-if _G.MistHubKeyValidated then
-    SetupGameSelection()
-else
-    SetupKeySystem()
+MainTab:AddButton({
+    Title = "Load Game-Specific Hub",
+    Description = "Load the hub for the current game.",
+    Callback = LoadGameScript
+})
+
+-- Ensure PC-only Notification
+if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+    Fluent:Notify({
+        Title = "Device Not Supported",
+        Content = "MistHub Universal Loader is for PC only. Mobile not supported.",
+        Duration = 5
+    })
+    game.Players.LocalPlayer:Kick("This loader is for PC only. Mobile devices are not supported.")
 end
 
-print("Mist Hub Loader initialized on " .. os.date("%B %d, %Y") .. ".")
+-- Open Window
+Window:SelectTab(1)
+Fluent:Notify({
+    Title = "MistHub Loaded",
+    Content = "Universal Loader ready. Click to load game hub.",
+    Duration = 3
+})
