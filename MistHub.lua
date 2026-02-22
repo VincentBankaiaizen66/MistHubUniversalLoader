@@ -1,187 +1,142 @@
--- Multi-Game Hub Launcher with Key System GUI
--- Created for Roblox scripting. Loads scripts from permanent URLs after key validation.
--- Key system inspired by Mist Hub: Uses Linkvertise for keys with 12-hour expiration.
--- Universal Key: One key works for all games until expiration (12 hours).
+-- Mist Hub Loader (Multi-Game Hub with Key System)
+-- Supports PC and Mobile versions of Hunted with selection prompt
+-- Single Key System in Loader; Game Scripts Bypass Their Own After Validation
 
--- Table of supported games. Add new games here following the template below.
+-- Safety and Error Handling Wrapper
+local function safeLoad(func)
+    local success, result = pcall(func)
+    if not success then
+        warn("Mist Hub Error: " .. tostring(result) .. ". Falling back to basic mode.")
+        return nil
+    end
+    return result
+end
+
+-- Load Fluent UI Library for Loader (with fallback)
+local Fluent = safeLoad(function()
+    return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+end)
+
+local Window
+if Fluent then
+    local Options = Fluent.Options
+    Window = Fluent:CreateWindow({
+        Title = "Mist Hub Loader",
+        SubTitle = "Multi-Game Hub",
+        TabWidth = 160,
+        Size = UDim2.fromOffset(580, 460),
+        Acrylic = true,  -- Enable animations on PC
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.RightControl
+    })
+    print("Mist Hub: Fluent UI loaded successfully.")
+else
+    warn("Mist Hub: Fluent UI failed to load. Using console feedback only.")
+end
+
+-- Key System Variables
+local KeyValidated = false
+local ValidatedKey = nil
+local PersonalPermanentKeys = {["MY_PERSONAL_KEY_123"] = true}  -- Replace with your keys
+
+local function ValidateKey(inputKey)  -- Placeholder validation logic
+    if PersonalPermanentKeys[inputKey] or inputKey == "VALID_KEY" then
+        KeyValidated = true
+        ValidatedKey = inputKey
+        _G.MistHubKeyValidated = true  -- Set global flag for game scripts to check
+        return true, "Key validated! Access granted."
+    end
+    return false, "Invalid key. Get a new key from Linkvertise."
+end
+
+-- Key System GUI
+local function SetupKeySystem()
+    if not Fluent then
+        print("Key system unavailable. Access granted for testing.")
+        KeyValidated = true
+        _G.MistHubKeyValidated = true  -- Set flag even in fallback
+        SetupGameSelection()
+        return
+    end
+
+    local KeyTab = Window:AddTab({ Title = "Key System", Icon = "key" })
+    local KeySect = KeyTab:AddSection({ Title = "Access Validation" })
+    KeySect:AddParagraph({ Title = "Enter Key", Content = "Input your key to unlock Mist Hub." })
+    
+    KeySect:AddButton({
+        Title = "Get Key from Linkvertise",
+        Description = "Click to copy link for temporary key",
+        Callback = function()
+            local link = "https://link-target.net/3097614/ZAIAZeMRBPSb"
+            if setclipboard then setclipboard(link) end
+            Fluent:Notify({ Title = "Link Copied", Content = "Paste in browser: " .. link })
+        end
+    })
+    
+    KeySect:AddInput("KeyInput", {
+        Title = "Enter Key",
+        Callback = function(txt)
+            local valid, message = ValidateKey(txt)
+            Fluent:Notify({ Title = "Validation", Content = message })
+            if valid then
+                KeyTab:Destroy()
+                SetupGameSelection()
+            end
+        end
+    })
+end
+
+-- Supported Games Table (Updated with PC and Mobile for Hunted)
 local SupportedGames = {
-    ["Hunted"] = {
-        ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/4d27b8d683225d2e858320edf5ef5ea4/raw/MistHubhuntedpc.lua",
-        Description = "Load Mist Hub for Hunted (PC version).",
-        PlaceId = 13643168649723  -- Actual PlaceId for HUNTED, enabling auto-detection/highlighting.
+    ["Hunted (PC)"] = {
+        ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/4d27b8d683225d2e858320edf5ef5ea4/raw/MistHubhuntedpc.lua",  -- PC script URL (with Fluent + animations)
+        Description = "Load Mist Hub for Hunted (PC version with animations).",
+        PlaceId = 13643168649723  -- PlaceId for HUNTED
+    },
+    ["Hunted (Mobile)"] = {
+        ScriptURL = "https://gist.githubusercontent.com/VincentBankaiaizen66/5a1cb8dc8d88c43d7dc3457aa6594ba4/raw/2c94c276a205ebc5d9a80c9f96155cb01346937c/HuntedMobile.lua",  -- Mobile script URL (with Kavo, no animations)
+        Description = "Load Mist Hub for Hunted (Mobile version without animations).",
+        PlaceId = 13643168649723  -- Same PlaceId for HUNTED
     }
-    -- Template for adding a new game (copy-paste this block and edit values):
-    --[[
-    ["NewGameName"] = {
-        ScriptURL = "https://example.com/YourNewScript.lua",  -- Replace with raw URL of the script
-        Description = "Description for the new game.",        -- Replace with a short description
-        PlaceId = 0000000000                                 -- Replace with actual Roblox PlaceId for auto-detection
-    }
-    --]]
-    -- Add more games by copying the template above and pasting here with updated details.
 }
 
--- Variables for key validation state (simulates persistence for current session)
-local KeyValidated = false
-local ValidatedKey = nil  -- Store the key for potential backend re-check
-
--- Placeholder function for key validation (replace with your actual logic)
-local function ValidateKey(inputKey)
-    if inputKey == "VALID_KEY" then
-        ValidatedKey = inputKey
-        KeyValidated = true
-        return true, "Key validated successfully! Access granted to all games for 12 hours."
-    else
-        ValidatedKey = nil
-        KeyValidated = false
-        return false, "Invalid key. Please try again or get a new one from Linkvertise."
+-- Game Selection GUI
+local function SetupGameSelection()
+    if not Fluent then
+        print("Game selection unavailable. Load a script manually.")
+        return
     end
-end
 
--- Function to check if key is still valid (for future backend implementation)
-local function IsKeyStillValid()
-    return KeyValidated
-end
+    local GameTab = Window:AddTab({ Title = "Game Selection", Icon = "gamepad" })
+    local GameSect = GameTab:AddSection({ Title = "Supported Games" })
+    GameSect:AddParagraph({ Title = "Select Game", Content = "Choose a game to load Mist Hub. PC versions have animations; Mobile do not." })
 
--- Load Fluent UI Library (replace with the latest raw URL for Fluent)
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Library.lua"))()  -- Update this URL if outdated
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-
--- Setup Fluent Window
-local Window = Fluent:CreateWindow({
-    Title = "MistHubUniversalLoader",
-    SubTitle = "Multi-Game Hub",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,  -- Enable acrylic blur if supported by executor
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
-
--- Create Tabs for Key System and Game Selection (we'll show based on validation)
-local KeySystemTab = Window:AddTab({ Title = "Key System", Icon = "key" })
-local GameSelectionTab = Window:AddTab({ Title = "Game Selection", Icon = "gamepad" })
-
--- Create the Key System GUI using Fluent
-local function ShowKeyGUI()
-    -- Hide Game Selection Tab initially
-    GameSelectionTab:SetVisible(false)
-    KeySystemTab:SetVisible(true)
-    Window:SelectTab(1)  -- Show Key System tab
-
-    -- Key System Section
-    local KeySection = KeySystemTab:AddSection("Key Validation")
-    KeySection:AddParagraph({
-        Title = "Instructions",
-        Content = "Enter your key below. Keys expire after 12 hours. Visit Linkvertise to obtain a new key."
-    })
-
-    local LinkvertiseButton = KeySection:AddButton({
-        Title = "Get Key from Linkvertise",
-        Description = "Click to view the Linkvertise URL for your key.",
-        Callback = function()
-            local link = "https://link-target.net/3097614/ZAIAZeMRBPSb"
-            Fluent:Notify({
-                Title = "Linkvertise URL",
-                Content = "Visit: " .. link .. "\nCopy this link and open it in your browser.",
-                Duration = 10
-            })
-        end
-    })
-
-    local CopyLinkButton = KeySection:AddButton({
-        Title = "Copy Link to Clipboard",
-        Description = "Copy the Linkvertise URL to your clipboard.",
-        Callback = function()
-            local link = "https://link-target.net/3097614/ZAIAZeMRBPSb"
-            if setclipboard then
-                setclipboard(link)
-                Fluent:Notify({
-                    Title = "Success",
-                    Content = "Link copied to clipboard! Paste it in your browser.",
-                    Duration = 5
-                })
-            else
-                Fluent:Notify({
-                    Title = "Error",
-                    Content = "Clipboard not supported. Manually copy the link from the notification above.",
-                    Duration = 5
-                })
-            end
-        end
-    })
-
-    local KeyInput = KeySection:AddInput({
-        Title = "Enter Key",
-        Description = "Input your key here to gain access.",
-        Default = "",
-        Placeholder = "Enter key here...",
-        Callback = function(value)
-            -- Store the input if needed, though we'll use the button for submission
-        end
-    })
-
-    local SubmitButton = KeySection:AddButton({
-        Title = "Submit Key",
-        Description = "Validate your key to access the game hub.",
-        Callback = function()
-            local inputKey = KeyInput.Value
-            local success, message = ValidateKey(inputKey)
-            if success then
-                Fluent:Notify({
-                    Title = "Success",
-                    Content = message,
-                    Duration = 5
-                })
-                KeySystemTab:SetVisible(false)
-                ShowGameSelectionContent(GameSelectionTab)
-                GameSelectionTab:SetVisible(true)
-                Window:SelectTab(2)  -- Switch to Game Selection tab
-            else
-                Fluent:Notify({
-                    Title = "Error",
-                    Content = message,
-                    Duration = 5
-                })
-            end
-        end
-    })
-end
-
--- Function to show Game Selection GUI after key validation using Fluent
-function ShowGameSelectionContent(tab)
-    local GameSection = tab:AddSection("Select a Game")
-    GameSection:AddParagraph({
-        Title = "Game Selection",
-        Content = "Select a game below to load its script. The current game (if detected) will be highlighted."
-    })
-
-    local currentPlaceId = game.PlaceId  -- For auto-detection
-    for gameName, details in pairs(SupportedGames) do
-        GameSection:AddButton({
-            Title = gameName,
-            Description = details.Description,
+    local currentPlaceId = game.PlaceId
+    for gameName, data in pairs(SupportedGames) do
+        local isCurrentGame = (data.PlaceId == currentPlaceId)
+        GameSect:AddButton({
+            Title = gameName .. (isCurrentGame and " (Current Game)" or ""),
+            Description = data.Description,
             Callback = function()
-                loadstring(game:HttpGet(details.ScriptURL))()
-                Fluent:Notify({
-                    Title = "Loading",
-                    Content = "Loading script for " .. gameName .. "...",
-                    Duration = 3
-                })
-                -- Optionally close the UI after loading, or let user close it
-                -- Window:Destroy()
+                Fluent:Notify({ Title = "Loading", Content = "Loading " .. gameName .. "..." })
+                local success, err = pcall(function()
+                    loadstring(game:HttpGet(data.ScriptURL))()
+                end)
+                if not success then
+                    warn("Mist Hub Load Error: " .. tostring(err) .. ". Check URL or syntax.")
+                else
+                    print("Mist Hub: " .. gameName .. " loaded successfully.")
+                end
             end
         })
     end
 end
 
--- Script entry point: Check if key is already validated
-if IsKeyStillValid() then
-    KeySystemTab:SetVisible(false)
-    GameSelectionTab:SetVisible(true)
-    ShowGameSelectionContent(GameSelectionTab)
-    Window:SelectTab(2)  -- Show Game Selection tab
+-- Script Entry Point
+if _G.MistHubKeyValidated then
+    SetupGameSelection()
 else
-    ShowKeyGUI()
+    SetupKeySystem()
 end
+
+print("Mist Hub Loader initialized on " .. os.date("%B %d, %Y") .. ".")
